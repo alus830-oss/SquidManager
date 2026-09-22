@@ -17,10 +17,26 @@ jobs:
           git submodule update --init --recursive --depth 1
 
       - name: Configure
-        run: cmake -B cmake_build -G Xcode
+        run: cmake -B cmake_build -G Xcode -DCMAKE_OSX_ARCHITECTURES=arm64
 
       - name: Build
-        run: cmake --build cmake_build --config Release -- -quiet
+        run: |
+          if cmake --build cmake_build --config Release -- -quiet GCC_WARN_INHIBIT_ALL_WARNINGS=YES > build.log 2>&1; then
+            echo "BUILD OK"
+          else
+            echo "=================== ERRORS ==================="
+            grep -n -E "error:|BUILD FAILED|The following build commands failed" -A 3 build.log | head -150
+            echo "================ LAST 60 LINES ================"
+            tail -60 build.log
+            exit 1
+          fi
+
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
 
       - name: Package
         run: |
