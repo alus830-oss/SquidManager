@@ -50,6 +50,11 @@ public:
     void loadChannel (juce::ValueTree squidChannelPropertiesVT, uint8_t channelIndex, juce::File sampleFile);
     void renameSample (int channelIndex, juce::String newSampleName);
     void saveChannel (juce::ValueTree squidChannelPropertiesVT, uint8_t channelIndex, juce::File sampleFile);
+    // single file editing: write one channel (audio + Squid metadata/cue sets) to any wav file
+    bool saveChannelToFile (int channelIndex, juce::File outputFile);
+    // copy the channel's current state into the 'unedited' bank, so it no longer shows as having unsaved edits
+    void markChannelSaved (int channelIndex);
+    bool channelHasUnsavedEdits (int channelIndex);
     void saveBank ();
     void setBankDefaults ();
     void setBankUnedited ();

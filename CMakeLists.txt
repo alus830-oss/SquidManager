@@ -37,7 +37,7 @@ add_subdirectory(submodules/JUCE builds/JUCE)
 include(submodules/oolib/oolib.cmake)
 
 juce_add_gui_app(SquidManager
-    PRODUCT_NAME    "SquidManager"
+    PRODUCT_NAME    "SquidSingle"
     COMPANY_NAME    "OmOhmProductions"
     COMPANY_WEBSITE "https://cpr2323.github.io/"
     ICON_BIG        "Source/GUI/sqedit2_2.png"

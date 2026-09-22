@@ -1,5 +1,6 @@
 #include "EditManager.h"
 #include "../CvParameterProperties.h"
+#include "../Bank/BankHelpers.h"
 #include "../Bank/BankManagerProperties.h"
 #include "../Metadata/SquidSalmpleDefs.h"
 #include "../Metadata/SquidMetaDataReader.h"
@@ -1076,4 +1077,47 @@ int EditManager::findPreviousZeroCrossing (int startSampleOffset, int minSampleO
         }
     }
     return -1; // No zero crossing found
+}
+
+bool EditManager::saveChannelToFile (int channelIndex, juce::File outputFile)
+{
+    jassert (channelIndex >= 0 && channelIndex < 8);
+    auto& channelProperties { channelPropertiesList [channelIndex] };
+    if (channelProperties.getSampleFileName ().isEmpty () || channelProperties.getSampleDataAudioBuffer () == nullptr)
+        return false;
+
+    const auto sourceFile { juce::File (channelProperties.getSampleFileName ()) };
+    // write to a temp file next to the destination first, so a failed write never damages an existing file
+    auto tempFile { outputFile.getSiblingFile (outputFile.getFileNameWithoutExtension () + "_squidtmp").withFileExtension ("tmp") };
+    tempFile.deleteFile ();
+
+    SquidMetaDataWriter squidMetaDataWriter;
+    if (! squidMetaDataWriter.write (channelProperties.getValueTree (), sourceFile, tempFile) || ! tempFile.existsAsFile () || tempFile.getSize () == 0)
+    {
+        tempFile.deleteFile ();
+        return false;
+    }
+    // moveFileTo replaces the destination if it already exists
+    if (! tempFile.moveFileTo (outputFile))
+    {
+        tempFile.deleteFile ();
+        return false;
+    }
+    markChannelSaved (channelIndex);
+    return true;
+}
+
+void EditManager::markChannelSaved (int channelIndex)
+{
+    jassert (channelIndex >= 0 && channelIndex < 8);
+    SquidChannelProperties uneditedChannelProperties { uneditedSquidBankProperties.getChannelVT (channelIndex),
+                                                       SquidChannelProperties::WrapperType::owner,
+                                                       SquidChannelProperties::EnableCallbacks::no };
+    uneditedChannelProperties.copyFrom (channelPropertiesList [channelIndex].getValueTree (), SquidChannelProperties::CopyType::all, SquidChannelProperties::CheckIndex::no);
+}
+
+bool EditManager::channelHasUnsavedEdits (int channelIndex)
+{
+    jassert (channelIndex >= 0 && channelIndex < 8);
+    return ! BankHelpers::areChannelsEqual (uneditedSquidBankProperties.getChannelVT (channelIndex), channelPropertiesList [channelIndex].getValueTree ());
 }
